@@ -167,7 +167,7 @@ create_nixos_config() {
     log_info "Creating NixOS configuration with Caelestia support..."
     
     cat > /mnt/etc/nixos/configuration.nix << 'NIXCONFIG'
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, hostname, username, ... }:
 
 {
   imports = [
@@ -182,7 +182,7 @@ create_nixos_config() {
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
 
   # Networking
-  networking.hostName = "HOSTNAME_PLACEHOLDER";
+  networking.hostName = hostname;
   networking.networkmanager.enable = true;
 
   # Time zone
@@ -212,9 +212,9 @@ create_nixos_config() {
   nixpkgs.config.allowUnfree = true;
 
   # User account
-  users.users.USERNAME_PLACEHOLDER = {
+  users.users.${username} = {
     isNormalUser = true;
-    description = "USERNAME_PLACEHOLDER";
+    description = username;
     extraGroups = [ "wheel" "networkmanager" "video" "audio" "input" ];
     shell = pkgs.fish;
   };
@@ -242,7 +242,7 @@ create_nixos_config() {
 
   # VirtualBox Guest Additions (comment out if not using VirtualBox)
   virtualisation.virtualbox.guest.enable = true;
-  virtualisation.virtualbox.guest.draganddrop = true;
+  virtualisation.virtualbox.guest.dragAndDrop = true;  # Fixed capitalization
 
   # Audio via Pipewire
   security.rtkit.enable = true;
@@ -307,8 +307,8 @@ create_nixos_config() {
     hyprlock
     hyprshot
     
-    # Quickshell
-    quickshell
+    # Quickshell (from flake input)
+    inputs.quickshell.packages.${pkgs.system}.default
     
     # Wayland utilities
     wl-clipboard
@@ -348,7 +348,7 @@ create_nixos_config() {
     # Theming
     adw-gtk3
     papirus-icon-theme
-    qt5ct
+    libsForQt5.qt5ct  # Fixed: was qt5ct
     qt6ct
     libsForQt5.qtstyleplugin-kvantum
     
@@ -428,13 +428,11 @@ create_nixos_config() {
   };
 
   # System version - DO NOT CHANGE after initial install
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.05";
 }
 NIXCONFIG
 
-    # Replace placeholders
-    sed -i "s/USERNAME_PLACEHOLDER/$USERNAME/g" /mnt/etc/nixos/configuration.nix
-    sed -i "s/HOSTNAME_PLACEHOLDER/$HOSTNAME/g" /mnt/etc/nixos/configuration.nix
+    # Replace placeholders (hostname and username are now passed via specialArgs, not sed)
     sed -i "s|TIMEZONE_PLACEHOLDER|$TIMEZONE|g" /mnt/etc/nixos/configuration.nix
     sed -i "s/LOCALE_PLACEHOLDER/$LOCALE/g" /mnt/etc/nixos/configuration.nix
     
@@ -801,43 +799,40 @@ POSTINSTALL
 create_flake_config() {
     log_info "Creating flake.nix for reproducible builds..."
     
-    cat > /mnt/etc/nixos/flake.nix << 'FLAKECONFIG'
+    cat > /mnt/etc/nixos/flake.nix << FLAKECONFIG
 {
   description = "NixOS configuration with Caelestia and Quickshell";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    # Use unstable for latest packages (required for wayland-protocols >= 1.41)
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager";  # master branch for unstable
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Quickshell from upstream
+    # Quickshell flake - use GitHub mirror (more reliable)
     quickshell = {
-      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+      url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, quickshell, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, quickshell, ... }@inputs:
     let
       system = "x86_64-linux";
+      hostname = "$HOSTNAME";
+      username = "$USERNAME";
       
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
       };
-      
-      pkgs-unstable = import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
     in {
-      nixosConfigurations.HOSTNAME_PLACEHOLDER = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.\${hostname} = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs pkgs-unstable; };
+        specialArgs = { inherit inputs hostname username; };
         modules = [
           ./configuration.nix
           
@@ -846,18 +841,22 @@ create_flake_config() {
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.USERNAME_PLACEHOLDER = import ./home.nix;
-            home-manager.extraSpecialArgs = { inherit inputs pkgs-unstable; };
+            home-manager.users.\${username} = import ./home.nix;
+            home-manager.extraSpecialArgs = { inherit inputs hostname username; };
           }
+        ];
+      };
+      
+      # Dev shell for working on configs
+      devShells.\${system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          nil
+          nixpkgs-fmt
         ];
       };
     };
 }
 FLAKECONFIG
-
-    # Replace placeholders
-    sed -i "s/USERNAME_PLACEHOLDER/$USERNAME/g" /mnt/etc/nixos/flake.nix
-    sed -i "s/HOSTNAME_PLACEHOLDER/$HOSTNAME/g" /mnt/etc/nixos/flake.nix
     
     log_success "flake.nix created"
 }
@@ -866,22 +865,26 @@ create_home_manager_config() {
     log_info "Creating Home Manager configuration..."
     
     cat > /mnt/etc/nixos/home.nix << 'HOMECONFIG'
-{ config, pkgs, lib, inputs, pkgs-unstable, ... }:
+{ config, pkgs, lib, inputs, hostname, username, ... }:
 
 {
-  home.username = "USERNAME_PLACEHOLDER";
-  home.homeDirectory = "/home/USERNAME_PLACEHOLDER";
-  home.stateVersion = "24.11";
+  # Use mkForce to override any conflicting values from imported modules
+  home.username = lib.mkForce username;
+  home.homeDirectory = lib.mkForce "/home/${username}";
+  home.stateVersion = lib.mkForce "25.05";
 
   # Let Home Manager manage itself
   programs.home-manager.enable = true;
+
+  # NOTE: We don't import Caelestia's HM module during install because it conflicts
+  # with username/stateVersion settings. After booting, you can clone and set up
+  # caelestia-dots manually with the setup-caelestia.sh script.
 
   # User packages (in addition to system packages)
   home.packages = with pkgs; [
     # Development tools
     nodejs
     python3
-    rustup
     
     # Additional utilities
     ripgrep
@@ -898,12 +901,114 @@ create_home_manager_config() {
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "USERNAME_PLACEHOLDER";
+    userName = username;
     userEmail = "user@example.com";  # Change this!
     extraConfig = {
       init.defaultBranch = "main";
       pull.rebase = true;
       push.autoSetupRemote = true;
+    };
+  };
+
+  # Fish shell
+  programs.fish = {
+    enable = true;
+    interactiveShellInit = ''
+      set -g fish_greeting
+      starship init fish | source
+    '';
+    shellAliases = {
+      ls = "eza --icons --group-directories-first";
+      ll = "eza -la --icons --group-directories-first";
+      la = "eza -a --icons --group-directories-first";
+      lt = "eza --tree --icons --group-directories-first";
+      cat = "bat --style=auto";
+      grep = "rg";
+      find = "fd";
+      cd.. = "cd ..";
+      "..." = "cd ../..";
+      "...." = "cd ../../..";
+      cls = "clear";
+      rm = "trash-put";
+      gs = "git status";
+      ga = "git add";
+      gc = "git commit";
+      gp = "git push";
+      gl = "git log --oneline --graph";
+      gd = "git diff";
+      nrs = "sudo nixos-rebuild switch --flake /etc/nixos#${hostname}";
+      nrt = "sudo nixos-rebuild test --flake /etc/nixos#${hostname}";
+      ncg = "sudo nix-collect-garbage -d";
+      cae-shell = "qs -c caelestia";
+      cae-reload = "caelestia shell reload";
+    };
+  };
+
+  # Starship prompt
+  programs.starship = {
+    enable = true;
+    settings = {
+      format = lib.concatStrings [
+        "[](#7aa2f7)"
+        "$os"
+        "$username"
+        "[](bg:#bb9af7 fg:#7aa2f7)"
+        "$directory"
+        "[](fg:#bb9af7 bg:#9ece6a)"
+        "$git_branch"
+        "$git_status"
+        "[](fg:#9ece6a bg:#e0af68)"
+        "$nodejs"
+        "$python"
+        "$rust"
+        "$nix_shell"
+        "[](fg:#e0af68 bg:#1a1b26)"
+        "$time"
+        "[ ](fg:#1a1b26)"
+        "\n$character"
+      ];
+      os = {
+        disabled = false;
+        style = "bg:#7aa2f7 fg:#1a1b26";
+        format = "[ $symbol ]($style)";
+        symbols.NixOS = "";
+      };
+      username = {
+        show_always = true;
+        style_user = "bg:#7aa2f7 fg:#1a1b26";
+        style_root = "bg:#7aa2f7 fg:#1a1b26";
+        format = "[$user ]($style)";
+      };
+      directory = {
+        style = "bg:#bb9af7 fg:#1a1b26";
+        format = "[ $path ]($style)";
+        truncation_length = 3;
+        truncation_symbol = "…/";
+      };
+      git_branch = {
+        symbol = "";
+        style = "bg:#9ece6a fg:#1a1b26";
+        format = "[ $symbol $branch ]($style)";
+      };
+      git_status = {
+        style = "bg:#9ece6a fg:#1a1b26";
+        format = "[$all_status$ahead_behind ]($style)";
+      };
+      nix_shell = {
+        symbol = "";
+        style = "bg:#e0af68 fg:#1a1b26";
+        format = "[ $symbol ($name) ]($style)";
+      };
+      time = {
+        disabled = false;
+        time_format = "%R";
+        style = "bg:#1a1b26 fg:#c0caf5";
+        format = "[ $time ]($style)";
+      };
+      character = {
+        success_symbol = "[❯](bold green)";
+        error_symbol = "[❯](bold red)";
+      };
     };
   };
 
@@ -920,6 +1025,46 @@ create_home_manager_config() {
       color_theme = "tokyo-night";
       theme_background = false;
       vim_keys = true;
+    };
+  };
+
+  # Foot terminal
+  programs.foot = {
+    enable = true;
+    settings = {
+      main = {
+        font = "JetBrainsMono Nerd Font:size=11";
+        dpi-aware = "yes";
+        pad = "12x12";
+      };
+      cursor = {
+        style = "beam";
+        blink = "yes";
+      };
+      mouse = {
+        hide-when-typing = "yes";
+      };
+      colors = {
+        alpha = 0.9;
+        background = "1a1b26";
+        foreground = "c0caf5";
+        regular0 = "15161e";
+        regular1 = "f7768e";
+        regular2 = "9ece6a";
+        regular3 = "e0af68";
+        regular4 = "7aa2f7";
+        regular5 = "bb9af7";
+        regular6 = "7dcfff";
+        regular7 = "a9b1d6";
+        bright0 = "414868";
+        bright1 = "f7768e";
+        bright2 = "9ece6a";
+        bright3 = "e0af68";
+        bright4 = "7aa2f7";
+        bright5 = "bb9af7";
+        bright6 = "7dcfff";
+        bright7 = "c0caf5";
+      };
     };
   };
 
@@ -987,25 +1132,57 @@ create_home_manager_config() {
 
   # Create config files
   home.file = {
+    # Hyprland config
+    ".config/hypr/hyprland.conf".text = ''
+      # Caelestia Hyprland Configuration
+      # Source the main caelestia config (after running setup-caelestia.sh)
+      # source = ~/.config/caelestia-dots/hypr/hyprland.conf
+      
+      # User overrides
+      source = ~/.config/caelestia/hypr-user.conf
+      
+      # Autostart Caelestia shell
+      exec-once = qs -c caelestia
+      
+      # Polkit agent
+      exec-once = ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
+    '';
+    
+    # User hyprland overrides
+    ".config/caelestia/hypr-user.conf".text = ''
+      # User Hyprland overrides
+      # Disable VRR (helps with flickering in VMs)
+      misc {
+          vrr = 0
+      }
+    '';
+    
+    # Caelestia shell config
+    ".config/caelestia/shell.json".text = builtins.toJSON {
+      wallpapers_path = "~/Pictures/Wallpapers";
+      terminal = "foot";
+      file_manager = "thunar";
+      browser = "firefox";
+    };
+    
     # Create Pictures/Wallpapers directory marker
     "Pictures/Wallpapers/.keep".text = "";
-    
-    # Placeholder face image path
-    ".face".source = config.lib.file.mkOutOfStoreSymlink "/dev/null";
   };
 
-  # Activation script to run after home-manager activation
+  # Activation script to clone caelestia repos
   home.activation = {
-    setupCaelestia = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD mkdir -p $HOME/.config/{hypr,quickshell,caelestia}
-      $DRY_RUN_CMD mkdir -p $HOME/Pictures/Wallpapers
+    cloneCaelestia = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      if [ ! -d "$HOME/.config/caelestia-dots" ]; then
+        $DRY_RUN_CMD ${pkgs.git}/bin/git clone https://github.com/caelestia-dots/caelestia.git "$HOME/.config/caelestia-dots" || true
+      fi
+      if [ ! -d "$HOME/.config/quickshell/caelestia" ]; then
+        $DRY_RUN_CMD mkdir -p "$HOME/.config/quickshell"
+        $DRY_RUN_CMD ${pkgs.git}/bin/git clone https://github.com/caelestia-dots/shell.git "$HOME/.config/quickshell/caelestia" || true
+      fi
     '';
   };
 }
 HOMECONFIG
-
-    # Replace placeholders
-    sed -i "s/USERNAME_PLACEHOLDER/$USERNAME/g" /mnt/etc/nixos/home.nix
     
     log_success "home.nix created"
 }
@@ -1013,8 +1190,11 @@ HOMECONFIG
 install_nixos() {
     log_info "Installing NixOS (this may take a while)..."
     
+    # Enable flakes for the install command
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    
     # Install using flakes
-    nixos-install --flake /mnt/etc/nixos#$HOSTNAME --no-root-passwd
+    nixos-install --flake /mnt/etc/nixos#$HOSTNAME --extra-experimental-features "nix-command flakes"
     
     log_success "NixOS installed successfully!"
 }
