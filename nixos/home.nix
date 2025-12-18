@@ -1,4 +1,4 @@
-{ config, pkgs, lib, pkgs-unstable, hostname, username, ... }:
+{ config, pkgs, lib, inputs, hostname, username, ... }:
 
 {
   # Use mkForce so your values win if any imported module defines these too.
@@ -6,7 +6,7 @@
   # username/stateVersion conflicts during ISO installs.)
   home.username = lib.mkForce username;
   home.homeDirectory = lib.mkForce "/home/${username}";
-  home.stateVersion = lib.mkForce "24.11";
+  home.stateVersion = lib.mkForce "25.05";
 
   # Let Home Manager manage itself
   programs.home-manager.enable = true;

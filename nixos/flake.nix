@@ -2,21 +2,22 @@
   description = "NixOS configuration with Caelestia and Quickshell";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    # Use unstable since you're on 25.11 ISO
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager";  # master branch for unstable
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # NOTE: We use pkgs.quickshell from nixpkgs instead of the flake.
-    # The flake requires wayland-protocols >= 1.41, but nixos-24.11 only has 1.38.
-    # If you want the absolute latest quickshell after install, you can add the flake
-    # input back and use nixpkgs-unstable for its follows, or build from source.
+    # Quickshell flake - works on unstable (has wayland-protocols >= 1.41)
+    quickshell = {
+      url = "github:quickshell-mirror/quickshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, quickshell, ... }@inputs:
     let
       system = "x86_64-linux";
       hostname = "caelestia";
@@ -26,36 +27,29 @@
         inherit system;
         config.allowUnfree = true;
       };
-      
-      pkgs-unstable = import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
     in {
       nixosConfigurations.${hostname} = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs pkgs-unstable hostname username; };
+        specialArgs = { inherit inputs hostname username; };
         modules = [
           ./configuration.nix
           
-          # Home Manager as a NixOS module
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.${username} = import ./home.nix;
-            home-manager.extraSpecialArgs = { inherit pkgs-unstable hostname username; };
+            home-manager.extraSpecialArgs = { inherit inputs hostname username; };
           }
         ];
       };
       
-      # Also provide a dev shell for working on configs
+      # Dev shell for working on configs
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          nil  # Nix LSP
+          nil
           nixpkgs-fmt
         ];
       };
     };
 }
-

@@ -1,4 +1,4 @@
-{ config, pkgs, lib, hostname, username, ... }:
+{ config, pkgs, lib, inputs, hostname, username, ... }:
 
 {
   imports = [
@@ -138,8 +138,8 @@
     hyprlock
     hyprshot
     
-    # Quickshell (from nixpkgs - the flake requires wayland-protocols 1.41+ which isn't in 24.11)
-    quickshell
+    # Quickshell (from flake - unstable has wayland-protocols >= 1.41)
+    inputs.quickshell.packages.${pkgs.system}.default
     
     # Wayland utilities
     wl-clipboard
@@ -259,6 +259,6 @@
   };
 
   # System version - DO NOT CHANGE after initial install
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.05";
 }
 
