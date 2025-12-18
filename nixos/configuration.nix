@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, hostname, username, ... }:
 
 {
   imports = [
@@ -13,7 +13,7 @@
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
 
   # Networking
-  networking.hostName = "caelestia";  # CHANGE THIS
+  networking.hostName = hostname;
   networking.networkmanager.enable = true;
 
   # Time zone
@@ -42,10 +42,10 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # User account - CHANGE USERNAME
-  users.users.nixos = {
+  # User account
+  users.users.${username} = {
     isNormalUser = true;
-    description = "nixos";
+    description = username;
     extraGroups = [ "wheel" "networkmanager" "video" "audio" "input" ];
     shell = pkgs.fish;
   };
@@ -73,7 +73,7 @@
 
   # VirtualBox Guest Additions (comment out if not using VirtualBox)
   virtualisation.virtualbox.guest.enable = true;
-  virtualisation.virtualbox.guest.draganddrop = true;
+  virtualisation.virtualbox.guest.dragAndDrop = true;
 
   # Audio via Pipewire
   security.rtkit.enable = true;
@@ -138,7 +138,7 @@
     hyprlock
     hyprshot
     
-    # Quickshell
+    # Quickshell (from nixpkgs - the flake requires wayland-protocols 1.41+ which isn't in 24.11)
     quickshell
     
     # Wayland utilities
@@ -179,7 +179,7 @@
     # Theming
     adw-gtk3
     papirus-icon-theme
-    qt5ct
+    libsForQt5.qt5ct
     qt6ct
     libsForQt5.qtstyleplugin-kvantum
     

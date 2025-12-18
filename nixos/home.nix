@@ -1,15 +1,19 @@
-{ config, pkgs, lib, inputs, pkgs-unstable, caelestia-shell, ... }:
+{ config, pkgs, lib, pkgs-unstable, hostname, username, ... }:
 
 {
-  home.username = "nixos";  # CHANGE THIS
-  home.homeDirectory = "/home/nixos";  # CHANGE THIS
-  home.stateVersion = "24.11";
+  # Use mkForce so your values win if any imported module defines these too.
+  # (We intentionally do NOT import Caelestia's HM module by default because it has caused
+  # username/stateVersion conflicts during ISO installs.)
+  home.username = lib.mkForce username;
+  home.homeDirectory = lib.mkForce "/home/${username}";
+  home.stateVersion = lib.mkForce "24.11";
 
   # Let Home Manager manage itself
   programs.home-manager.enable = true;
 
-  # Import Caelestia shell home-manager module if available
-  # imports = [ caelestia-shell.homeManagerModules.default ];
+  # NOTE: We don't import Caelestia's HM module during install because it conflicts
+  # with username/stateVersion settings. After booting, you can clone and set up
+  # caelestia-dots manually with the setup-caelestia.sh script.
 
   # User packages (in addition to system packages)
   home.packages = with pkgs; [
@@ -32,7 +36,7 @@
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "nixos";  # CHANGE THIS
+    userName = username;
     userEmail = "user@example.com";  # CHANGE THIS
     extraConfig = {
       init.defaultBranch = "main";

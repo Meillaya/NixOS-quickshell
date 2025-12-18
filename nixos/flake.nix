@@ -10,22 +10,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Quickshell from upstream for latest features
-    quickshell = {
-      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    
-    # Caelestia shell flake
-    caelestia-shell = {
-      url = "github:caelestia-dots/shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # NOTE: We use pkgs.quickshell from nixpkgs instead of the flake.
+    # The flake requires wayland-protocols >= 1.41, but nixos-24.11 only has 1.38.
+    # If you want the absolute latest quickshell after install, you can add the flake
+    # input back and use nixpkgs-unstable for its follows, or build from source.
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, quickshell, caelestia-shell, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
+      hostname = "caelestia";
+      username = "mei";
       
       pkgs = import nixpkgs {
         inherit system;
@@ -37,9 +32,9 @@
         config.allowUnfree = true;
       };
     in {
-      nixosConfigurations.caelestia = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.${hostname} = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs pkgs-unstable; };
+        specialArgs = { inherit inputs pkgs-unstable hostname username; };
         modules = [
           ./configuration.nix
           
@@ -48,8 +43,8 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.nixos = import ./home.nix;  # CHANGE USERNAME
-            home-manager.extraSpecialArgs = { inherit inputs pkgs-unstable caelestia-shell; };
+            home-manager.users.${username} = import ./home.nix;
+            home-manager.extraSpecialArgs = { inherit pkgs-unstable hostname username; };
           }
         ];
       };
