@@ -307,8 +307,8 @@ create_nixos_config() {
     hyprlock
     hyprshot
     
-    # Quickshell (from flake input)
-    inputs.quickshell.packages.${pkgs.system}.default
+    # Quickshell (from nixpkgs-unstable - avoids flake assertion bug on ISO)
+    quickshell
     
     # Wayland utilities
     wl-clipboard
@@ -804,7 +804,7 @@ create_flake_config() {
   description = "NixOS configuration with Caelestia and Quickshell";
 
   inputs = {
-    # Use unstable for latest packages (required for wayland-protocols >= 1.41)
+    # Use unstable for latest packages
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
@@ -812,14 +812,11 @@ create_flake_config() {
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Quickshell flake - use GitHub mirror (more reliable)
-    quickshell = {
-      url = "github:quickshell-mirror/quickshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # NOTE: We use pkgs.quickshell from nixpkgs-unstable instead of a flake input.
+    # The flake input with "follows" causes assertion failures on some ISO versions.
   };
 
-  outputs = { self, nixpkgs, home-manager, quickshell, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       hostname = "$HOSTNAME";

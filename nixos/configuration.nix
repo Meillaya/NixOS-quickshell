@@ -138,8 +138,8 @@
     hyprlock
     hyprshot
     
-    # Quickshell (from flake - unstable has wayland-protocols >= 1.41)
-    inputs.quickshell.packages.${pkgs.system}.default
+    # Quickshell (from nixpkgs-unstable - avoids flake assertion bug on ISO)
+    quickshell
     
     # Wayland utilities
     wl-clipboard

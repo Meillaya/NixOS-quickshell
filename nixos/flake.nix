@@ -2,7 +2,7 @@
   description = "NixOS configuration with Caelestia and Quickshell";
 
   inputs = {
-    # Use unstable since you're on 25.11 ISO
+    # Use unstable for latest packages
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
@@ -10,14 +10,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Quickshell flake - works on unstable (has wayland-protocols >= 1.41)
-    quickshell = {
-      url = "github:quickshell-mirror/quickshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # NOTE: We use pkgs.quickshell from nixpkgs-unstable instead of a flake input.
+    # The flake input with "follows" causes assertion failures on some ISO versions.
   };
 
-  outputs = { self, nixpkgs, home-manager, quickshell, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       hostname = "caelestia";
