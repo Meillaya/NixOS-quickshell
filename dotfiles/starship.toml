@@ -1,0 +1,231 @@
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║                    Starship Prompt Configuration               ║
+# ║                    Tokyo Night Theme                           ║
+# ╚═══════════════════════════════════════════════════════════════╝
+
+# Timeout for commands
+command_timeout = 5000
+
+# Inserts a blank line between shell prompts
+add_newline = true
+
+# Main format
+format = """
+[](#7aa2f7)\
+$os\
+$username\
+[](bg:#bb9af7 fg:#7aa2f7)\
+$directory\
+[](fg:#bb9af7 bg:#9ece6a)\
+$git_branch\
+$git_status\
+[](fg:#9ece6a bg:#e0af68)\
+$c\
+$rust\
+$golang\
+$nodejs\
+$python\
+$lua\
+$java\
+$nix_shell\
+[](fg:#e0af68 bg:#f7768e)\
+$docker_context\
+$kubernetes\
+[](fg:#f7768e bg:#1a1b26)\
+$cmd_duration\
+$time\
+[ ](fg:#1a1b26)\
+$line_break\
+$character"""
+
+# Right prompt
+right_format = """$status"""
+
+# ── Character ─────────────────────────────────────────────────────
+[character]
+success_symbol = "[❯](bold #9ece6a)"
+error_symbol = "[❯](bold #f7768e)"
+vimcmd_symbol = "[❮](bold #7aa2f7)"
+
+# ── OS ────────────────────────────────────────────────────────────
+[os]
+disabled = false
+style = "bg:#7aa2f7 fg:#1a1b26"
+format = "[ $symbol ]($style)"
+
+[os.symbols]
+Arch = "󰣇"
+Debian = "󰣚"
+Fedora = "󰣛"
+Linux = "󰌽"
+Macos = "󰀵"
+NixOS = ""
+Ubuntu = "󰕈"
+Unknown = ""
+Windows = "󰍲"
+
+# ── Username ──────────────────────────────────────────────────────
+[username]
+show_always = true
+style_user = "bg:#7aa2f7 fg:#1a1b26"
+style_root = "bg:#f7768e fg:#1a1b26"
+format = "[$user ]($style)"
+
+# ── Directory ─────────────────────────────────────────────────────
+[directory]
+style = "bg:#bb9af7 fg:#1a1b26"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "bg:#bb9af7 fg:#f7768e"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Videos" = " "
+"~" = " "
+
+# ── Git ───────────────────────────────────────────────────────────
+[git_branch]
+symbol = ""
+style = "bg:#9ece6a fg:#1a1b26"
+format = "[ $symbol $branch ]($style)"
+
+[git_status]
+style = "bg:#9ece6a fg:#1a1b26"
+format = "[$all_status$ahead_behind ]($style)"
+conflicted = "="
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+up_to_date = ""
+untracked = "?${count}"
+stashed = "󰏗"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+
+# ── Programming Languages ─────────────────────────────────────────
+[c]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[golang]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[java]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[lua]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[nodejs]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[python]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+[rust]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+format = "[ $symbol ($version) ]($style)"
+
+# ── Nix Shell ─────────────────────────────────────────────────────
+[nix_shell]
+symbol = ""
+style = "bg:#e0af68 fg:#1a1b26"
+impure_msg = "[impure](bg:#e0af68 fg:#f7768e)"
+pure_msg = "[pure](bg:#e0af68 fg:#9ece6a)"
+format = "[ $symbol $name ]($style)"
+
+# ── Docker ────────────────────────────────────────────────────────
+[docker_context]
+symbol = ""
+style = "bg:#f7768e fg:#1a1b26"
+format = "[ $symbol $context ]($style)"
+only_with_files = true
+
+# ── Kubernetes ────────────────────────────────────────────────────
+[kubernetes]
+disabled = false
+symbol = "󱃾"
+style = "bg:#f7768e fg:#1a1b26"
+format = "[ $symbol $context(:$namespace) ]($style)"
+
+# ── Command Duration ──────────────────────────────────────────────
+[cmd_duration]
+min_time = 2000
+style = "bg:#1a1b26 fg:#e0af68"
+format = "[ 󱎫 $duration ]($style)"
+show_milliseconds = false
+
+# ── Time ──────────────────────────────────────────────────────────
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#1a1b26 fg:#c0caf5"
+format = "[ 󰥔 $time ]($style)"
+
+# ── Status ────────────────────────────────────────────────────────
+[status]
+disabled = false
+format = "[$symbol$status]($style) "
+symbol = "✘ "
+style = "fg:#f7768e"
+not_executable_symbol = "🚫 "
+not_found_symbol = "🔍 "
+sigint_symbol = "🧱 "
+
+# ── Battery ───────────────────────────────────────────────────────
+[battery]
+disabled = true
+full_symbol = "󰁹"
+charging_symbol = "󰂄"
+discharging_symbol = "󰂃"
+
+[[battery.display]]
+threshold = 15
+style = "fg:#f7768e"
+
+[[battery.display]]
+threshold = 30
+style = "fg:#e0af68"
+
+# ── Memory Usage ──────────────────────────────────────────────────
+[memory_usage]
+disabled = true
+threshold = 75
+symbol = "󰍛 "
+style = "fg:#e0af68"
+format = "[$symbol$ram_pct]($style) "
+
+# ── Hostname ──────────────────────────────────────────────────────
+[hostname]
+disabled = true
+ssh_only = true
+format = "[@$hostname]($style) "
+style = "fg:#bb9af7"
+
+# ── Line Break ────────────────────────────────────────────────────
+[line_break]
+disabled = false
+
+# ── Fill (used for right-aligning) ────────────────────────────────
+[fill]
+symbol = " "
+

@@ -1,0 +1,40 @@
+{
+    "wallpapers_path": "~/Pictures/Wallpapers",
+    "terminal": "foot",
+    "file_manager": "thunar",
+    "browser": "firefox",
+    "bar": {
+        "position": "top",
+        "height": 40,
+        "modules_left": ["launcher", "workspaces"],
+        "modules_center": ["media"],
+        "modules_right": ["systray", "network", "bluetooth", "audio", "battery", "clock"]
+    },
+    "launcher": {
+        "show_icons": true,
+        "show_description": true,
+        "max_results": 8
+    },
+    "dashboard": {
+        "show_pfp": true,
+        "show_calendar": true,
+        "show_weather": false,
+        "weather_location": ""
+    },
+    "notifications": {
+        "timeout": 5000,
+        "max_visible": 5,
+        "position": "top-right"
+    },
+    "osd": {
+        "enabled": true,
+        "timeout": 1500
+    },
+    "theme": {
+        "scheme": "dynamic",
+        "mode": "dark",
+        "blur": true,
+        "opacity": 0.9
+    }
+}
+
