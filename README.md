@@ -2,7 +2,7 @@
 
 A comprehensive, automated setup for NixOS with the beautiful Caelestia rice and Quickshell.
 
-![Caelestia Rice](https://github.com/user-attachments/assets/0840f496-575c-4ca6-83a8-87bb01a85c5f)
+https://github.com/user-attachments/assets/0840f496-575c-4ca6-83a8-87bb01a85c5f
 
 ## 📁 File Structure
 
