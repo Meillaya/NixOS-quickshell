@@ -153,6 +153,7 @@
     foot
     fish
     starship
+    fuzzel
     
     # File management
     trash-cli
