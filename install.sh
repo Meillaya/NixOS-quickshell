@@ -1190,11 +1190,11 @@ HOMECONFIG
 install_nixos() {
     log_info "Installing NixOS (this may take a while)..."
     
-    # Enable flakes for the install command
+    # Enable flakes for the install command via environment variable
     export NIX_CONFIG="experimental-features = nix-command flakes"
     
-    # Install using flakes
-    nixos-install --flake /mnt/etc/nixos#$HOSTNAME --extra-experimental-features "nix-command flakes"
+    # Install using flakes (NIX_CONFIG enables the experimental features)
+    nixos-install --flake /mnt/etc/nixos#$HOSTNAME
     
     log_success "NixOS installed successfully!"
 }
